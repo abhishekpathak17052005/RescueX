@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.rescuex.data.repository.IncidentRepository
+import com.rescuex.ui.components.AIIncidentSummaryCard
 import com.rescuex.ui.components.DetailItem
 import com.rescuex.ui.components.SeverityBadge
 import java.text.SimpleDateFormat
@@ -64,6 +65,11 @@ fun EmergencyDetailsScreen(
                 DetailItem("Status", incident.status.name.replace("_", " "))
                 DetailItem("Time", dateFormat.format(incident.timestamp))
                 DetailItem("Location", incident.location ?: "Unknown")
+                
+                if (incident.structuredAiSummary != null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    AIIncidentSummaryCard(incident.structuredAiSummary)
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

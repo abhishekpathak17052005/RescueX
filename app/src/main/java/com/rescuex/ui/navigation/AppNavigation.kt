@@ -23,6 +23,7 @@ import com.rescuex.viewmodel.ResponderViewModel
 import com.rescuex.data.repository.MockAuthRepository
 import com.rescuex.data.repository.MockIncidentRepository
 import com.rescuex.data.repository.MockContactRepository
+import com.rescuex.data.repository.VapiVoiceAssistantRepository
 import com.rescuex.location.LocationManager
 import androidx.compose.ui.platform.LocalContext
 
@@ -51,9 +52,10 @@ fun AppNavigation(navController: NavHostController) {
     val authRepo = MockAuthRepository()
     val contactRepo = MockContactRepository()
     val locationManager = LocationManager(context)
+    val voiceAssistantRepo = VapiVoiceAssistantRepository(context)
 
     val homeViewModel = HomeViewModel(authRepo, incidentRepo)
-    val emergencyViewModel = EmergencyViewModel(incidentRepo, locationManager)
+    val emergencyViewModel = EmergencyViewModel(incidentRepo, locationManager, voiceAssistantRepo)
     val historyViewModel = HistoryViewModel(incidentRepo)
     val contactsViewModel = ContactsViewModel(contactRepo)
     val responderViewModel = ResponderViewModel(incidentRepo)

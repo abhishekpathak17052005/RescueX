@@ -15,6 +15,14 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        val localProperties = java.util.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        buildConfigField("String", "VAPI_PUBLIC_KEY", "\"${localProperties.getProperty("vapi.public.key") ?: ""}\"")
+        buildConfigField("String", "VAPI_ASSISTANT_ID", "\"${localProperties.getProperty("vapi.assistant.id") ?: ""}\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -39,6 +47,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -54,6 +63,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.play.services.location)
+    implementation(libs.vapi.android)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)

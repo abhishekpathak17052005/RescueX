@@ -10,10 +10,12 @@ activityCompose = "1.9.2"
 composeBom = "2024.09.03"
 navigationCompose = "2.8.1"
 playServicesLocation = "21.3.0"
+vapi = "2.0.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+vapi-android = { group = "ai.vapi.android", name = "vapi", version.ref = "vapi" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

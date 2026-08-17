@@ -10,13 +10,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.rescuex.ui.components.AIIncidentSummaryCard
 import com.rescuex.ui.components.EmergencyTimeline
+import com.rescuex.ui.components.SeverityBadge
 import com.rescuex.ui.navigation.Screen
 import com.rescuex.viewmodel.EmergencyViewModel
+import com.rescuex.data.repository.AssistantState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +31,7 @@ fun ActiveEmergencyScreen(
     val activeIncident by emergencyViewModel.activeIncident.collectAsState()
     val elapsedTime by emergencyViewModel.elapsedTime.collectAsState()
     val location by emergencyViewModel.currentLocation.collectAsState()
+    val assistantState by emergencyViewModel.assistantState.collectAsState()
 
     val minutes = elapsedTime / 60
     val seconds = elapsedTime % 60
@@ -36,7 +41,7 @@ fun ActiveEmergencyScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { 
-                    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Emergency Active", color = MaterialTheme.colorScheme.error)
                         Text(timeString, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
@@ -86,6 +91,11 @@ fun ActiveEmergencyScreen(
                 }
             }
 
+            if (activeIncident?.structuredAiSummary != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                AIIncidentSummaryCard(activeIncident!!.structuredAiSummary!!)
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             Text(text = "Emergency Timeline", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(16.dp))
@@ -94,7 +104,7 @@ fun ActiveEmergencyScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Text(text = "AI Assistant", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "Ready to help collect emergency information.",
+                text = if (assistantState == AssistantState.ENDED) "Conversation complete. Summary generated." else "Ready to help collect emergency information.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -102,11 +112,12 @@ fun ActiveEmergencyScreen(
             Button(
                 onClick = { navController.navigate(Screen.AIAssistant.route) },
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
+                colors = if (assistantState == AssistantState.ENDED) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) else ButtonDefaults.buttonColors()
             ) {
                 Icon(Icons.Default.Chat, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Talk to AI Assistant")
+                Text(if (assistantState == AssistantState.ENDED) "View Assistant Again" else "Talk to AI Assistant")
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -125,7 +136,7 @@ fun ActiveEmergencyScreen(
                 }
                 Column {
                     Text(text = "Severity", style = MaterialTheme.typography.labelMedium)
-                    Text(text = activeIncident?.severity?.name ?: "Pending", style = MaterialTheme.typography.bodyLarge)
+                    SeverityBadge(activeIncident?.severity ?: com.rescuex.data.model.Severity.PENDING)
                 }
             }
             
