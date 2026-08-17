@@ -23,6 +23,8 @@ import com.rescuex.viewmodel.ResponderViewModel
 import com.rescuex.data.repository.MockAuthRepository
 import com.rescuex.data.repository.MockIncidentRepository
 import com.rescuex.data.repository.MockContactRepository
+import com.rescuex.location.LocationManager
+import androidx.compose.ui.platform.LocalContext
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -43,13 +45,15 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
+    val context = LocalContext.current
     // For now, create ViewModels here or use a simple DI/Factory
     val incidentRepo = MockIncidentRepository()
     val authRepo = MockAuthRepository()
     val contactRepo = MockContactRepository()
+    val locationManager = LocationManager(context)
 
     val homeViewModel = HomeViewModel(authRepo, incidentRepo)
-    val emergencyViewModel = EmergencyViewModel(incidentRepo)
+    val emergencyViewModel = EmergencyViewModel(incidentRepo, locationManager)
     val historyViewModel = HistoryViewModel(incidentRepo)
     val contactsViewModel = ContactsViewModel(contactRepo)
     val responderViewModel = ResponderViewModel(incidentRepo)

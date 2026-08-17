@@ -16,6 +16,13 @@ import com.rescuex.ui.navigation.Screen
 import com.rescuex.viewmodel.HomeViewModel
 import com.rescuex.viewmodel.EmergencyViewModel
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -25,6 +32,17 @@ fun HomeScreen(
 ) {
     val user by homeViewModel.user.collectAsState()
     val recentIncident by homeViewModel.recentIncident.collectAsState()
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (granted) {
+            emergencyViewModel.activateSOS()
+            navController.navigate(Screen.EmergencyActive.route)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -65,8 +83,19 @@ fun HomeScreen(
 
             item {
                 SOSButton(onConfirm = {
-                    emergencyViewModel.activateSOS()
-                    navController.navigate(Screen.EmergencyActive.route)
+                    val permissions = arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                    val allGranted = permissions.all {
+                        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+                    }
+                    if (allGranted) {
+                        emergencyViewModel.activateSOS()
+                        navController.navigate(Screen.EmergencyActive.route)
+                    } else {
+                        permissionLauncher.launch(permissions)
+                    }
                 })
                 Spacer(modifier = Modifier.height(48.dp))
             }

@@ -25,11 +25,22 @@ fun ActiveEmergencyScreen(
     emergencyViewModel: EmergencyViewModel
 ) {
     val activeIncident by emergencyViewModel.activeIncident.collectAsState()
+    val elapsedTime by emergencyViewModel.elapsedTime.collectAsState()
+    val location by emergencyViewModel.currentLocation.collectAsState()
+
+    val minutes = elapsedTime / 60
+    val seconds = elapsedTime % 60
+    val timeString = String.format("%02d:%02d", minutes, seconds)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Emergency Active", color = MaterialTheme.colorScheme.error) },
+                title = { 
+                    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                        Text("Emergency Active", color = MaterialTheme.colorScheme.error)
+                        Text(timeString, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -101,16 +112,16 @@ fun ActiveEmergencyScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Text(text = "Location", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "Location will be available in the next phase.",
+                text = location?.address ?: "Fetching location...",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = if (location != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text(text = "Emergency Type", style = MaterialTheme.typography.labelMedium)
-                    Text(text = activeIncident?.type?.name ?: "Not specified", style = MaterialTheme.typography.bodyLarge)
+                    Text(text = activeIncident?.type?.name?.replace("_", " ") ?: "Not specified", style = MaterialTheme.typography.bodyLarge)
                 }
                 Column {
                     Text(text = "Severity", style = MaterialTheme.typography.labelMedium)
@@ -120,7 +131,10 @@ fun ActiveEmergencyScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             TextButton(
-                onClick = { /* Demo Resolve */ },
+                onClick = { 
+                    emergencyViewModel.resolveEmergency()
+                    navController.popBackStack(Screen.Home.route, false)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
