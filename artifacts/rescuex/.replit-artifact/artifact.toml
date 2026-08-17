@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "RescueX"
+description = "A polished Expo mobile MVP for AI-assisted emergency coordination, with a low-tap SOS flow, demo responder lifecycle, emergency contacts, incident history, and resilient offline-friendly behavior."
+version = "1.0.0"
+id = "artifacts/rescuex"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 22835
+
+[services.development]
+run = "pnpm --filter @workspace/rescuex run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/rescuex", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/rescuex", "run", "serve" ]
+
+[services.env]
+PORT = "22835"
+BASE_PATH = "/"

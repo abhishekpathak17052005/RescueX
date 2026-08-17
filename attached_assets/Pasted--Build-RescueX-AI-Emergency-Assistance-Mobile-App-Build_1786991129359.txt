@@ -1,0 +1,1061 @@
+# Build RescueX — AI Emergency Assistance Mobile App
+
+Build a complete mobile application called **RescueX**.
+
+RescueX is an AI-powered emergency assistance and coordination app designed to help users quickly communicate an emergency, share their location, provide important emergency information, and connect with a responder workflow.
+
+This must be a **real mobile application**, not a responsive website.
+
+The app should feel like a polished startup product and should be suitable for a hackathon demo and future production development.
+
+---
+
+## 1. Technology Stack
+
+### Mobile App
+
+Use:
+
+* React Native
+* Expo
+* TypeScript
+* Expo Router
+* NativeWind or Tailwind-style styling
+* Expo Location
+* Expo Notifications
+* Expo SecureStore
+* React Query/TanStack Query
+* Zustand for lightweight state management
+* Lucide icons
+
+### Backend
+
+Use:
+
+* Node.js
+* TypeScript
+* Express.js
+* PostgreSQL
+* Prisma ORM
+* JWT authentication
+* Zod validation
+
+### AI Voice
+
+Use:
+
+* Vapi AI
+
+Keep Vapi credentials only on the backend.
+
+### Maps
+
+Use a map provider that works properly with React Native/Expo.
+
+Create a map abstraction so the provider can be changed later.
+
+---
+
+# 2. Main Concept
+
+The core idea is extremely simple:
+
+OPEN APP
+
+↓
+
+PRESS SOS
+
+↓
+
+CONFIRM EMERGENCY
+
+↓
+
+GET LOCATION
+
+↓
+
+CREATE INCIDENT
+
+↓
+
+AI ASSISTANT STARTS
+
+↓
+
+COLLECT EMERGENCY INFORMATION
+
+↓
+
+SHARE INFORMATION WITH RESPONDER
+
+↓
+
+TRACK RESPONSE
+
+↓
+
+RESOLVE INCIDENT
+
+The emergency flow should require as few taps as possible.
+
+---
+
+# 3. App Screens
+
+Create these screens:
+
+### Onboarding
+
+* Welcome
+* What RescueX does
+* Location permission
+* Notification permission
+* Emergency contact setup
+
+### Authentication
+
+* Login
+* Register
+* Forgot password
+
+### Home
+
+The main screen should have a large SOS button.
+
+### Emergency Active
+
+Display:
+
+* Emergency status
+* Current location
+* AI assistant status
+* Incident ID
+* Responder status
+* Emergency timeline
+
+### AI Assistant
+
+Voice emergency assistant interface.
+
+### Emergency Contacts
+
+Add/edit/delete emergency contacts.
+
+### Emergency History
+
+Previous emergency incidents.
+
+### Incident Details
+
+Full information about a previous/current incident.
+
+### Profile
+
+User details and settings.
+
+### Settings
+
+* Notifications
+* Location permissions
+* Emergency contacts
+* Privacy
+* Account
+
+---
+
+# 4. Home Screen
+
+The home screen must be extremely simple.
+
+Top:
+
+"RescueX"
+
+Subtitle:
+
+"Your AI-powered emergency assistance."
+
+Main area:
+
+Large circular button:
+
+SOS
+
+Below:
+
+"Press for emergency assistance"
+
+Secondary actions:
+
+* Call AI Assistant
+* Share Location
+* Emergency Contacts
+
+Show a small location status:
+
+"Location Ready"
+
+or
+
+"Location Permission Required"
+
+Do not overload the home screen.
+
+The SOS button should be the most visually prominent element.
+
+---
+
+# 5. SOS Interaction
+
+When the user taps SOS:
+
+Show a confirmation screen.
+
+Title:
+
+"Do you need emergency assistance?"
+
+Buttons:
+
+"Cancel"
+
+"Activate SOS"
+
+If activated:
+
+### Step 1
+
+Request location permission if required.
+
+### Step 2
+
+Get:
+
+* Latitude
+* Longitude
+* Accuracy
+* Timestamp
+
+### Step 3
+
+Create incident using:
+
+POST /api/incidents
+
+### Step 4
+
+Display:
+
+"Emergency Activated"
+
+### Step 5
+
+Start AI assistance.
+
+### Step 6
+
+Notify emergency contacts through the backend notification service.
+
+### Step 7
+
+Show live emergency status.
+
+---
+
+# 6. Emergency Active Screen
+
+This is the most important screen after SOS.
+
+Top:
+
+"Emergency Active"
+
+Show incident ID.
+
+Then:
+
+### Your Location
+
+Display map.
+
+Show:
+
+"Location shared"
+
+### AI Assistant
+
+Show:
+
+"AI Assistant Connected"
+
+Button:
+
+"Talk to AI Assistant"
+
+### Response Status
+
+Timeline:
+
+SOS Activated ✓
+
+Emergency Information Collected ✓
+
+Responder Assigned
+
+Responder En Route
+
+Responder Arrived
+
+Resolved
+
+The timeline should update dynamically.
+
+---
+
+# 7. Vapi AI Voice Assistant
+
+Integrate Vapi AI.
+
+The AI assistant is specifically designed for emergency information collection.
+
+It should speak calmly and ask short questions.
+
+Example:
+
+"Tell me what happened."
+
+"Are you currently safe?"
+
+"Are you injured?"
+
+"Where are you?"
+
+"Is anyone else injured?"
+
+"Do you need medical assistance?"
+
+The AI should collect:
+
+* Emergency type
+* Severity
+* Location
+* Injuries
+* Number of people involved
+* Immediate danger
+* Additional information
+
+After the call, generate an incident summary.
+
+Example:
+
+"User reported a high-severity accident. One person may be injured. The user's current location has been shared."
+
+Display the summary in the app.
+
+---
+
+# 8. Emergency Types
+
+Support:
+
+* Medical
+* Accident
+* Fire
+* Personal Safety
+* Natural Disaster
+* Missing Person
+* Security Threat
+* Other
+
+Severity:
+
+* LOW
+* MEDIUM
+* HIGH
+* CRITICAL
+
+---
+
+# 9. Emergency Contacts
+
+Users can create emergency contacts.
+
+Each contact:
+
+* Name
+* Relationship
+* Phone number
+
+Actions:
+
+* Add
+* Edit
+* Delete
+* Set primary contact
+
+When SOS is activated, the backend should create notification events for emergency contacts.
+
+Create the notification service as an abstraction so SMS/push providers can be added later.
+
+---
+
+# 10. Push Notifications
+
+Use Expo Notifications.
+
+Notify users when:
+
+* Emergency is activated
+* Responder is assigned
+* Responder accepts
+* Responder is en route
+* Responder arrives
+* Emergency is resolved
+
+Example:
+
+"Responder assigned to your emergency."
+
+---
+
+# 11. Location
+
+Use Expo Location.
+
+Request permission correctly.
+
+Show:
+
+* Current location
+* Accuracy
+* Last updated time
+
+Send location to backend only during an active emergency unless the user explicitly enables another feature.
+
+Do not continuously track users unnecessarily.
+
+---
+
+# 12. Responder System
+
+Create a responder role.
+
+A responder can log into the same app with a responder account.
+
+Responder home screen:
+
+"Active Emergencies"
+
+Each incident card:
+
+* Emergency type
+* Severity
+* Distance
+* Time elapsed
+* Location
+
+Responder can open an incident.
+
+---
+
+# 13. Responder Incident Screen
+
+Show:
+
+### Emergency
+
+Medical Emergency
+
+### Severity
+
+HIGH
+
+### AI Summary
+
+Display the AI-generated incident summary.
+
+### Location
+
+Display map.
+
+### User
+
+Display authorized emergency information.
+
+### Actions
+
+"Accept"
+
+"En Route"
+
+"Arrived"
+
+"Resolve"
+
+The status should update on the user's app.
+
+---
+
+# 14. Real-Time Status
+
+Implement real-time updates using:
+
+* WebSockets
+
+If WebSockets create unnecessary complexity for the MVP, use polling through React Query.
+
+The architecture should allow WebSockets to be added later.
+
+---
+
+# 15. Backend API
+
+Implement:
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+GET /api/users/me
+
+POST /api/incidents
+
+GET /api/incidents
+
+GET /api/incidents/:id
+
+PATCH /api/incidents/:id/status
+
+POST /api/incidents/:id/location
+
+GET /api/incidents/:id/timeline
+
+POST /api/incidents/:id/ai-session
+
+POST /api/vapi/webhook
+
+GET /api/emergency-contacts
+
+POST /api/emergency-contacts
+
+PATCH /api/emergency-contacts/:id
+
+DELETE /api/emergency-contacts/:id
+
+GET /api/responders
+
+POST /api/incidents/:id/assign
+
+---
+
+# 16. Database
+
+Use Prisma + PostgreSQL.
+
+Create:
+
+User
+
+EmergencyContact
+
+Incident
+
+IncidentLocation
+
+IncidentTimeline
+
+AIConversation
+
+Responder
+
+Notification
+
+AuditLog
+
+Important relationships:
+
+User → EmergencyContacts
+
+User → Incidents
+
+Incident → Location
+
+Incident → Timeline
+
+Incident → AIConversation
+
+Incident → Responder
+
+Incident → Notifications
+
+---
+
+# 17. Security
+
+Implement:
+
+* JWT authentication
+* Password hashing
+* Secure token storage using Expo SecureStore
+* Role-based authorization
+* Zod validation
+* Rate limiting
+* Helmet
+* CORS
+* Secure API endpoints
+* Audit logs
+
+Never put:
+
+VAPI_API_KEY
+
+DATABASE_URL
+
+JWT_SECRET
+
+inside the mobile application.
+
+All secrets must remain on the backend.
+
+---
+
+# 18. Mobile UX
+
+The application should be designed for stressful situations.
+
+Therefore:
+
+* Large buttons
+* Minimal text
+* Clear hierarchy
+* Fast navigation
+* Large touch targets
+* Accessible typography
+* Simple emergency states
+* Minimal number of screens during SOS
+* Clear status indicators
+
+Do not make the emergency interface look like a complicated dashboard.
+
+---
+
+# 19. Visual Design
+
+Design language:
+
+Modern emergency-tech startup.
+
+Use:
+
+* Clean typography
+* Rounded cards
+* Subtle shadows
+* Strong SOS visual hierarchy
+* Smooth animations
+* Professional icons
+* Minimal gradients
+* Dark mode support
+
+The application should feel similar in quality to a modern consumer safety application.
+
+---
+
+# 20. Navigation
+
+Use Expo Router.
+
+Structure:
+
+app/
+
+(auth)/
+
+```
+login.tsx
+
+register.tsx
+```
+
+(tabs)/
+
+```
+index.tsx
+
+history.tsx
+
+contacts.tsx
+
+profile.tsx
+```
+
+emergency/
+
+```
+active.tsx
+
+assistant.tsx
+
+details.tsx
+```
+
+responder/
+
+```
+index.tsx
+
+incident.tsx
+```
+
+settings/
+
+```
+index.tsx
+```
+
+---
+
+# 21. Demo Mode
+
+Create a DEMO MODE.
+
+This is extremely important for hackathon demonstrations.
+
+If Vapi, maps, push notifications, or backend services are unavailable, RescueX should still demonstrate the complete flow.
+
+Demo:
+
+User presses SOS
+
+↓
+
+Simulated emergency created
+
+↓
+
+Simulated AI assistant
+
+↓
+
+AI collects emergency information
+
+↓
+
+Incident appears for responder
+
+↓
+
+Responder accepts
+
+↓
+
+Responder goes En Route
+
+↓
+
+Responder Arrives
+
+↓
+
+Incident Resolved
+
+Clearly label simulated information as:
+
+"Demo Mode"
+
+Do not pretend that simulated emergency services are real.
+
+---
+
+# 22. Offline/Error Handling
+
+Handle:
+
+* No internet
+* Location permission denied
+* GPS unavailable
+* Backend unavailable
+* Vapi unavailable
+* Notification permission denied
+
+Show useful messages.
+
+Example:
+
+"Location permission is required to share your emergency location."
+
+Do not crash the app.
+
+---
+
+# 23. Performance
+
+Optimize for mobile.
+
+Use:
+
+* React Query caching
+* Lazy loading where useful
+* Optimized images
+* Minimal unnecessary renders
+* Efficient API calls
+
+The SOS flow must feel immediate.
+
+---
+
+# 24. App Architecture
+
+Separate:
+
+UI
+
+↓
+
+Hooks
+
+↓
+
+Services
+
+↓
+
+API Client
+
+↓
+
+Backend
+
+↓
+
+Database
+
+Do not put API calls directly inside UI components.
+
+Create:
+
+services/api.ts
+
+services/auth.ts
+
+services/incidents.ts
+
+services/location.ts
+
+services/vapi.ts
+
+hooks/useAuth.ts
+
+hooks/useIncident.ts
+
+hooks/useLocation.ts
+
+---
+
+# 25. Environment Configuration
+
+Create:
+
+.env.example
+
+Backend:
+
+DATABASE_URL=
+
+JWT_SECRET=
+
+VAPI_API_KEY=
+
+VAPI_ASSISTANT_ID=
+
+FRONTEND_URL=
+
+Mobile:
+
+EXPO_PUBLIC_API_URL=
+
+Never commit actual secrets.
+
+---
+
+# 26. Demo Credentials
+
+Create development accounts:
+
+User:
+
+[demo.user@rescuex.test](mailto:demo.user@rescuex.test)
+
+Responder:
+
+[demo.responder@rescuex.test](mailto:demo.responder@rescuex.test)
+
+Admin:
+
+[demo.admin@rescuex.test](mailto:demo.admin@rescuex.test)
+
+Use a safe development password and document it in the README.
+
+---
+
+# 27. Testing
+
+Test:
+
+Authentication
+
+SOS
+
+Location permission
+
+Incident creation
+
+AI workflow
+
+Vapi webhook
+
+Responder assignment
+
+Status updates
+
+Emergency contacts
+
+History
+
+Push notifications
+
+Role permissions
+
+Error handling
+
+---
+
+# 28. Final User Experience
+
+The final app should allow me to demonstrate:
+
+### User
+
+Login
+
+↓
+
+Home
+
+↓
+
+SOS
+
+↓
+
+Confirm
+
+↓
+
+Location
+
+↓
+
+Emergency Activated
+
+↓
+
+AI Assistant
+
+↓
+
+Emergency Summary
+
+↓
+
+Responder Assigned
+
+↓
+
+Responder En Route
+
+↓
+
+Responder Arrived
+
+↓
+
+Resolved
+
+### Responder
+
+Login
+
+↓
+
+Active Emergencies
+
+↓
+
+Open Incident
+
+↓
+
+View AI Summary
+
+↓
+
+View Location
+
+↓
+
+Accept
+
+↓
+
+En Route
+
+↓
+
+Arrived
+
+↓
+
+Resolve
+
+---
+
+# 29. Important Safety/Product Positioning
+
+RescueX is an **AI-assisted emergency coordination application**.
+
+Do not claim that RescueX itself is an official police, ambulance, fire, or government emergency service.
+
+Do not automatically contact real emergency services during development.
+
+For the MVP, use the RescueX responder workflow and demo integrations.
+
+Any real emergency-service integration should only be added through appropriate authorized partnerships and APIs.
+
+---
+
+# 30. Final Requirement
+
+Do not stop after generating UI.
+
+Actually implement:
+
+* Mobile frontend
+* Backend
+* Database
+* Authentication
+* SOS
+* Location
+* AI assistant integration
+* Vapi webhook
+* Emergency contacts
+* Responder workflow
+* Incident lifecycle
+* Notifications
+* Demo mode
+* Error handling
+
+Run the application and fix all build/runtime/type errors.
+
+The final product should look and behave like a **real RescueX mobile startup MVP**, not a collection of static screens.

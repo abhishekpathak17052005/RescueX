@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "RescueX",
+    "slug": "rescuex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/rescuex-icon.png",
+    "scheme": "rescuex",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/rescuex-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4F7F8"
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {},
+    "web": {
+      "favicon": "./assets/images/rescuex-icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
