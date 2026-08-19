@@ -10,11 +10,14 @@ activityCompose = "1.9.2"
 composeBom = "2024.09.03"
 navigationCompose = "2.8.1"
 playServicesLocation = "21.3.0"
+kotlinxCoroutinesPlayServices = "1.8.1"
 vapi = "2.0.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
+androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 vapi-android = { group = "ai.vapi.android", name = "vapi", version.ref = "vapi" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

@@ -7,13 +7,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,7 +61,7 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Person,
+                    imageVector = Icons.Default.Person,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
@@ -110,10 +116,10 @@ fun ProfileSection(title: String, content: @Composable ColumnScope.() -> Unit) {
 fun ProfileItem(title: String, icon: ImageVector, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(title) },
-        leadingContent = { Icon(icon, contentDescription = null) },
-        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+        leadingContent = { Icon(imageVector = icon, contentDescription = null) },
+        trailingContent = { Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null) },
         modifier = Modifier
-            .background(androidx.compose.ui.graphics.Color.Transparent)
+            .background(Color.Transparent)
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
             .clickable { onClick() }
     )

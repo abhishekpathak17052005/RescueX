@@ -15,12 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.rescuex.ui.components.AIIncidentSummaryCard
-import com.rescuex.ui.components.EmergencyTimeline
-import com.rescuex.ui.components.SeverityBadge
+import com.rescuex.data.repository.AssistantState
+import com.rescuex.ui.components.*
 import com.rescuex.ui.navigation.Screen
 import com.rescuex.viewmodel.EmergencyViewModel
-import com.rescuex.data.repository.AssistantState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +46,7 @@ fun ActiveEmergencyScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                     }
                 }
             )
@@ -91,9 +89,19 @@ fun ActiveEmergencyScreen(
                 }
             }
 
-            if (activeIncident?.structuredAiSummary != null) {
+            activeIncident?.ambulance?.let { ambulance ->
+                Spacer(modifier = Modifier.height(16.dp))
+                AmbulanceStatusCard(ambulance)
+            }
+
+            activeIncident?.selectedHospital?.let { hospital ->
+                Spacer(modifier = Modifier.height(16.dp))
+                HospitalSelectionCard(hospital)
+            }
+
+            activeIncident?.structuredAiSummary?.let { summary ->
                 Spacer(modifier = Modifier.height(24.dp))
-                AIIncidentSummaryCard(activeIncident!!.structuredAiSummary!!)
+                AIIncidentSummaryCard(summary)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -115,7 +123,7 @@ fun ActiveEmergencyScreen(
                 contentPadding = PaddingValues(16.dp),
                 colors = if (assistantState == AssistantState.ENDED) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) else ButtonDefaults.buttonColors()
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null)
+                Icon(imageVector = Icons.Default.Chat, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(if (assistantState == AssistantState.ENDED) "View Assistant Again" else "Talk to AI Assistant")
             }
