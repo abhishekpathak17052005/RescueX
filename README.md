@@ -1,189 +1,46 @@
-This screenshot shows a **different issue from the role-routing problem**.
+# 🚑 RescueX
 
-Your login screen is displaying:
+### AI-Powered Emergency Response & Coordination Platform
 
-> **“Failed to get document because the client is offline.”**
+RescueX is an AI-assisted emergency response platform designed to connect patients, ambulances, and hospitals through a real-time emergency coordination system.
 
-So Firebase Authentication may be working, but the app cannot currently read the Firestore `users/{uid}` document to retrieve the user's role.
+The platform combines **voice AI, emergency incident management, GPS location, ambulance coordination, hospital selection, and real-time cloud synchronization** into a single ecosystem.
 
-That explains why role-based routing can fail.
+> ⚠️ **Current Status:** RescueX is currently an MVP / simulation. Ambulance dispatch and hospital availability are simulated and are not connected to real emergency-service providers.
 
-### First check your phone's internet
+---
 
-On the physical phone, open Chrome and verify that a website loads.
+## 🚨 Problem
 
-Then make sure the phone has either:
+During an emergency, a patient may not be able to communicate their location, describe their condition clearly, contact relatives, find the right hospital, or coordinate with an ambulance.
 
-```text
-Wi-Fi ✅
-or
-Mobile data ✅
-```
+At the same time, ambulance and hospital teams may lack real-time information about the patient and the destination facility.
 
-### Then check Firebase/Firestore
+RescueX aims to reduce this communication gap by creating a connected emergency-response workflow.
 
-In Firebase Console:
+---
 
-**Build → Firestore Database**
+## 💡 Solution
 
-Make sure the Firestore database has actually been created.
-
-You should have:
+RescueX provides a voice-first emergency workflow:
 
 ```text
-users
-  └── <user UID>
-       ├── name
-       ├── email
-       ├── phone
-       └── role
-```
-
-### Important: don't make the app silently fall back
-
-Your app should behave like this:
-
-```text
-Firebase Auth login
-       ↓
-User UID
-       ↓
-Firestore users/{uid}
-       ↓
-role retrieved
-       ↓
-PATIENT / AMBULANCE / HOSPITAL
-```
-
-If Firestore is offline:
-
-```text
-"Cannot connect to Firebase. Check your internet connection."
-```
-
-not:
-
-```text
-Patient Dashboard
-```
-
-because that would hide the actual problem.
-
-### Give Gemini this prompt
-
-```text
-Fix the Firebase offline/profile retrieval issue in RescueX.
-
-Current login screen shows:
-
-"Failed to get document because the client is offline."
-
-The app needs to retrieve:
-
-users/{authenticatedUserUid}
-
-from Cloud Firestore after Firebase Authentication login.
-
-IMPORTANT:
-Do not modify Vapi, Gemini, SOS, ambulance, hospital, or dashboard business logic.
-
-Investigate only Firebase Authentication + Firestore user-profile retrieval.
-
-1. Verify Firebase is initialized correctly using the real google-services.json.
-2. Verify Firestore is initialized correctly.
-3. Verify the app has INTERNET permission.
-4. Verify Firebase Authentication login completes before Firestore profile lookup.
-5. After login, obtain:
-
-FirebaseAuth.currentUser?.uid
-
-6. Read:
-
-FirebaseFirestore.getInstance()
-    .collection("users")
-    .document(uid)
-
-7. Add detailed logs:
-
-[AUTH] Login successful
-[AUTH] UID present = true
-[FIRESTORE] Starting user profile read
-[FIRESTORE] users/{uid} read started
-[FIRESTORE] User profile read successful
-[FIRESTORE] Role = PATIENT/AMBULANCE/HOSPITAL
-[FIRESTORE] User profile read failed: <safe error>
-
-Do not log passwords, tokens, API keys, or sensitive credentials.
-
-8. Handle Firestore errors separately:
-
-OFFLINE
-PERMISSION_DENIED
-NOT_FOUND
-UNAVAILABLE
-OTHER
-
-9. If offline:
-show a clear error:
-"Unable to connect to RescueX services. Check your internet connection."
-
-Do not silently route the user to a dashboard.
-
-10. If the user document does not exist:
-show:
-"User profile not configured."
-
-Do not default to PATIENT.
-
-11. If role is missing:
-show:
-"User role not configured."
-
-12. Verify that the registration flow creates:
-
-users/{uid}
-
-with:
-
-uid
-name
-email
-phone
-role
-createdAt
-
-13. Verify that the Firestore document is created under the SAME Firebase project represented by google-services.json.
-
-14. Verify Firestore security rules allow the authenticated user to read their own users/{uid} document.
-
-15. Build and run the app.
-
-Acceptance test:
-
-Login
-→ Firebase Auth success
-→ UID obtained
-→ Firestore users/{uid} read
-→ role retrieved
-→ correct dashboard selected.
-
-Also report the exact root cause if Firestore is offline, permission denied, wrong Firebase project, missing document, or incorrect initialization.
-```
-
-### One thing I'd check immediately
-
-Since you recently added `google-services.json`, verify that the Firebase project in the console is:
-
-```text
-RescueX-AI
-```
-
-and that the Android app registered in that project is:
-
-```text
-com.rescuex
-```
-
-Also make sure the phone is online.
-
-The screenshot itself doesn't show a Vapi or role-routing error yet; it specifically shows a **Firestore client offline error**, so fix this layer first.
+Patient presses SOS
+        ↓
+AI Assistant
+        ↓
+"Do you need an ambulance?"
+        ↓
+Ambulance dispatch
+        ↓
+Patient describes emergency
+        ↓
+Gemini classifies the emergency
+        ↓
+Suitable hospital identified
+        ↓
+Ambulance receives destination
+        ↓
+Hospital receives incoming emergency
+        ↓
+Real-time status synchronization
