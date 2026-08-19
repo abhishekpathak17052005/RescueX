@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.rescuex.app-mergeDebugResources-69:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Lenovo\\.gradle\\caches\\8.9\\transforms\\8fa5c42cb54dbe5239c5b9fb23f3e59b\\transformed\\appcompat-1.6.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    }
+                }
+            ]
+        }
+    ]
+}
