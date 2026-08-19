@@ -10,11 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.rescuex.ui.components.EmergencyTimeline
+import com.rescuex.data.repository.AssistantState
+import com.rescuex.ui.components.*
 import com.rescuex.ui.navigation.Screen
 import com.rescuex.viewmodel.EmergencyViewModel
 
@@ -25,14 +27,26 @@ fun ActiveEmergencyScreen(
     emergencyViewModel: EmergencyViewModel
 ) {
     val activeIncident by emergencyViewModel.activeIncident.collectAsState()
+    val elapsedTime by emergencyViewModel.elapsedTime.collectAsState()
+    val location by emergencyViewModel.currentLocation.collectAsState()
+    val assistantState by emergencyViewModel.assistantState.collectAsState()
+
+    val minutes = elapsedTime / 60
+    val seconds = elapsedTime % 60
+    val timeString = String.format("%02d:%02d", minutes, seconds)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Emergency Active", color = MaterialTheme.colorScheme.error) },
+                title = { 
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Emergency Active", color = MaterialTheme.colorScheme.error)
+                        Text(timeString, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                     }
                 }
             )
@@ -75,6 +89,21 @@ fun ActiveEmergencyScreen(
                 }
             }
 
+            activeIncident?.ambulance?.let { ambulance ->
+                Spacer(modifier = Modifier.height(16.dp))
+                AmbulanceStatusCard(ambulance)
+            }
+
+            activeIncident?.selectedHospital?.let { hospital ->
+                Spacer(modifier = Modifier.height(16.dp))
+                HospitalSelectionCard(hospital)
+            }
+
+            activeIncident?.structuredAiSummary?.let { summary ->
+                Spacer(modifier = Modifier.height(24.dp))
+                AIIncidentSummaryCard(summary)
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             Text(text = "Emergency Timeline", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(16.dp))
@@ -83,7 +112,7 @@ fun ActiveEmergencyScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Text(text = "AI Assistant", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "Ready to help collect emergency information.",
+                text = if (assistantState == AssistantState.ENDED) "Conversation complete. Summary generated." else "Ready to help collect emergency information.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -91,36 +120,40 @@ fun ActiveEmergencyScreen(
             Button(
                 onClick = { navController.navigate(Screen.AIAssistant.route) },
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
+                colors = if (assistantState == AssistantState.ENDED) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) else ButtonDefaults.buttonColors()
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null)
+                Icon(imageVector = Icons.Default.Chat, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Talk to AI Assistant")
+                Text(if (assistantState == AssistantState.ENDED) "View Assistant Again" else "Talk to AI Assistant")
             }
 
             Spacer(modifier = Modifier.height(32.dp))
             Text(text = "Location", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "Location will be available in the next phase.",
+                text = location?.address ?: "Fetching location...",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = if (location != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text(text = "Emergency Type", style = MaterialTheme.typography.labelMedium)
-                    Text(text = activeIncident?.type?.name ?: "Not specified", style = MaterialTheme.typography.bodyLarge)
+                    Text(text = activeIncident?.type?.name?.replace("_", " ") ?: "Not specified", style = MaterialTheme.typography.bodyLarge)
                 }
                 Column {
                     Text(text = "Severity", style = MaterialTheme.typography.labelMedium)
-                    Text(text = activeIncident?.severity?.name ?: "Pending", style = MaterialTheme.typography.bodyLarge)
+                    SeverityBadge(activeIncident?.severity ?: com.rescuex.data.model.Severity.PENDING)
                 }
             }
             
             Spacer(modifier = Modifier.height(32.dp))
             TextButton(
-                onClick = { /* Demo Resolve */ },
+                onClick = { 
+                    emergencyViewModel.resolveEmergency()
+                    navController.popBackStack(Screen.Home.route, false)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {

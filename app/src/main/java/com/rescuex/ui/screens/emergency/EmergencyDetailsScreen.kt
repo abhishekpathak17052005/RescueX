@@ -12,8 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.rescuex.data.repository.IncidentRepository
-import com.rescuex.ui.components.DetailItem
-import com.rescuex.ui.components.SeverityBadge
+import com.rescuex.ui.components.*
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -33,7 +32,7 @@ fun EmergencyDetailsScreen(
                 title = { Text("Incident Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -64,6 +63,21 @@ fun EmergencyDetailsScreen(
                 DetailItem("Status", incident.status.name.replace("_", " "))
                 DetailItem("Time", dateFormat.format(incident.timestamp))
                 DetailItem("Location", incident.location ?: "Unknown")
+
+                incident.ambulance?.let { ambulance ->
+                    Spacer(modifier = Modifier.height(16.dp))
+                    AmbulanceStatusCard(ambulance)
+                }
+
+                incident.selectedHospital?.let { hospital ->
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HospitalSelectionCard(hospital)
+                }
+                
+                if (incident.structuredAiSummary != null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    AIIncidentSummaryCard(incident.structuredAiSummary)
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 Text("AI Summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
