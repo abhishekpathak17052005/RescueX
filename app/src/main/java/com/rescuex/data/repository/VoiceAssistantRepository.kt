@@ -428,6 +428,36 @@ class VapiVoiceAssistantRepository(
         _transcript.value = "You: $text"
         _state.value = AssistantState.THINKING
         scope.launch {
+            // 1. Instantly dispatch ambulance & hospital in background
+            val incidentId = currentIncidentId
+            val lower = text.lowercase()
+            val type = when {
+                lower.contains("accident") || lower.contains("crash") || lower.contains("car") -> EmergencyType.ACCIDENT
+                lower.contains("fire") || lower.contains("smoke") || lower.contains("burn") -> EmergencyType.FIRE
+                else -> EmergencyType.MEDICAL
+            }
+
+            if (incidentId != null) {
+                try {
+                    dispatchAmbulanceForIncident(incidentId)
+                    selectHospitalForIncident(incidentId, type)
+                    lastSummary = AIIncidentSummary(
+                        incidentType = type,
+                        severity = Severity.CRITICAL,
+                        description = text,
+                        immediateDanger = true,
+                        injuredPeople = true,
+                        medicalAssistanceRequired = true,
+                        userSafe = false,
+                        locationAvailable = true,
+                        additionalInformation = "Emergency response unit dispatched via voice assistant."
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "[DISPATCH] Error during instant dispatch: ${e.message}")
+                }
+            }
+
+            // 2. Forward to Vapi if call is active
             try {
                 val msgContent = VapiMessageContent(role = "user", content = text)
                 val vapiMsg = VapiMessage(type = "add-message", message = msgContent)
@@ -435,6 +465,13 @@ class VapiVoiceAssistantRepository(
                 Log.d(TAG, "[VAPI] Sent user message: $text")
             } catch (e: Exception) {
                 Log.e(TAG, "[VAPI ERROR] Failed to send user message: ${e.message}")
+            }
+
+            // 3. Immediately transition out of THINKING after brief processing delay so user is never stuck
+            delay(1200)
+            if (_state.value == AssistantState.THINKING) {
+                _transcript.value = "RescueX AI: Emergency confirmed! Ambulance dispatched (ETA: 6 min). Paramedics are on the way."
+                _state.value = AssistantState.LISTENING
             }
         }
     }

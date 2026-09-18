@@ -247,6 +247,51 @@ fun AIAssistantScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Dispatched Ambulance Active Banner
+                activeIncident?.let { inc ->
+                    if (!inc.ambulanceId.isNullOrEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = SafetyGreen.copy(alpha = 0.15f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SafetyGreen, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Ambulance Dispatched (${inc.ambulanceId})",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SafetyGreen
+                                    )
+                                    Text(
+                                        text = "Paramedics en route • ETA: 6 mins",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                FilledTonalButton(
+                                    onClick = {
+                                        navController.navigate(Screen.EmergencyActive.createRoute(inc.incidentId)) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Track Map", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
                 // Live Transcript / AI Output Card
                 if (transcript.isNotBlank()) {
                     Card(
