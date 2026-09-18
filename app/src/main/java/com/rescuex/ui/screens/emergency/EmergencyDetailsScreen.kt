@@ -4,13 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.rescuex.data.model.AmbulanceStatus
+import com.rescuex.data.model.Incident
 import com.rescuex.data.repository.IncidentRepository
 import com.rescuex.ui.components.*
 import java.text.SimpleDateFormat
@@ -23,8 +25,12 @@ fun EmergencyDetailsScreen(
     incidentId: String,
     incidentRepository: IncidentRepository
 ) {
-    val incident = remember { incidentRepository.getIncidentById(incidentId) }
+    var incident by remember { mutableStateOf<Incident?>(null) }
     val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+
+    LaunchedEffect(incidentId) {
+        incident = incidentRepository.getIncidentById(incidentId)
+    }
 
     Scaffold(
         topBar = {
@@ -32,7 +38,7 @@ fun EmergencyDetailsScreen(
                 title = { Text("Incident Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -40,7 +46,7 @@ fun EmergencyDetailsScreen(
     ) { paddingValues ->
         if (incident == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Text("Incident not found")
+                Text("Loading incident details...")
             }
         } else {
             Column(
@@ -54,29 +60,36 @@ fun EmergencyDetailsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = incident.id, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    SeverityBadge(incident.severity)
+                    Text(text = incident!!.incidentId, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    SeverityBadge(incident!!.severity)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                DetailItem("Emergency Type", incident.type.name.replace("_", " "))
-                DetailItem("Status", incident.status.name.replace("_", " "))
-                DetailItem("Time", dateFormat.format(incident.timestamp))
-                DetailItem("Location", incident.location ?: "Unknown")
+                DetailItem("Emergency Type", incident!!.emergencyType.name.replace("_", " "))
+                DetailItem("Status", incident!!.status.name.replace("_", " "))
+                DetailItem("Time", dateFormat.format(incident!!.createdAt))
+                DetailItem("Location", incident!!.pickupAddress)
 
-                incident.ambulance?.let { ambulance ->
+                if (incident!!.ambulanceStatus != AmbulanceStatus.NOT_REQUESTED) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    AmbulanceStatusCard(ambulance)
+                    AmbulanceStatusCard(
+                        status = incident!!.ambulanceStatus,
+                        etaMinutes = incident!!.etaMinutes,
+                        ambulanceId = incident!!.ambulanceId
+                    )
                 }
 
-                incident.selectedHospital?.let { hospital ->
+                if (incident!!.hospitalId != null) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    HospitalSelectionCard(hospital)
+                    HospitalSelectionCard(
+                        name = incident!!.hospitalName ?: "Unknown",
+                        address = incident!!.hospitalAddress ?: "..."
+                    )
                 }
                 
-                if (incident.structuredAiSummary != null) {
+                if (incident!!.structuredAiSummary != null) {
                     Spacer(modifier = Modifier.height(24.dp))
-                    AIIncidentSummaryCard(incident.structuredAiSummary)
+                    AIIncidentSummaryCard(incident!!.structuredAiSummary!!)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -87,7 +100,7 @@ fun EmergencyDetailsScreen(
                     tonalElevation = 1.dp
                 ) {
                     Text(
-                        text = incident.aiSummary ?: "No summary available.",
+                        text = incident!!.reportedSymptoms ?: "No summary available.",
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )

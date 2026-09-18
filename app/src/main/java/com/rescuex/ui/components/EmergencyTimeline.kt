@@ -20,18 +20,22 @@ import com.rescuex.ui.theme.SafetyGreen
 @Composable
 fun EmergencyTimeline(currentStatus: IncidentStatus) {
     val steps = listOf(
-        IncidentStatus.SOS_ACTIVATED to "SOS Activated",
+        IncidentStatus.SOS_ACTIVE to "SOS Activated",
         IncidentStatus.INFO_COLLECTION to "Information Collection",
-        IncidentStatus.RESPONDER_ASSIGNED to "Responder Assignment",
+        IncidentStatus.AMBULANCE_DISPATCHED to "Ambulance Dispatched",
+        IncidentStatus.RESPONDER_ASSIGNED to "Responder Assigned",
         IncidentStatus.RESPONDER_EN_ROUTE to "Responder En Route",
         IncidentStatus.RESPONDER_ARRIVED to "Responder Arrived",
         IncidentStatus.RESOLVED to "Resolved"
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        steps.forEachIndexed { index, (status, label) ->
+        steps.forEachIndexed { index, pair ->
+            val status = pair.first
+            val label = pair.second
             val isActive = status == currentStatus
-            val isCompleted = steps.indexOfFirst { it.first == currentStatus } > index
+            val currentIndex = steps.indexOfFirst { it.first == currentStatus }
+            val isCompleted = currentIndex > index
             
             Row(
                 verticalAlignment = Alignment.CenterVertically,

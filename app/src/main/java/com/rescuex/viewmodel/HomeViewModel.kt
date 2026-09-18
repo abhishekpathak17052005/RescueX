@@ -22,11 +22,20 @@ class HomeViewModel(
     val recentIncident: StateFlow<Incident?> = _recentIncident
 
     init {
-        loadData()
+        viewModelScope.launch {
+            authRepository.currentUser.collect {
+                _user.value = it
+                if (it != null) {
+                    loadRecentIncident(it.uid)
+                }
+            }
+        }
     }
 
-    private fun loadData() {
-        _user.value = authRepository.getCurrentUser()
-        _recentIncident.value = incidentRepository.getIncidents().firstOrNull()
+    private fun loadRecentIncident(userId: String) {
+        viewModelScope.launch {
+            val incidents = incidentRepository.getIncidents()
+            _recentIncident.value = incidents.find { it.patientId == userId }
+        }
     }
 }

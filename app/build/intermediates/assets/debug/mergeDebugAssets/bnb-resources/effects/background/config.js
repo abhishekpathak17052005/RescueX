@@ -1,1 +1,0 @@
-Background = require('bnb_js/background');

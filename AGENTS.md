@@ -5,8 +5,7 @@ This project is a native Android application built with Kotlin and Jetpack Compo
 ## Architecture
 - **UI**: Jetpack Compose
 - **Pattern**: MVVM / Clean Architecture
-- **Backend**: Firebase
-- **Location**: Google Maps SDK
+- **Location**: Google Maps SDK / FusedLocationProvider
 - **Voice**: Vapi AI
 
 ## Development Workflow

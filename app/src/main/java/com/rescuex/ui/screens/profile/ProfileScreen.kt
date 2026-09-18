@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +36,7 @@ fun ProfileScreen(
     navController: NavHostController,
     authRepository: AuthRepository
 ) {
-    val user = remember { authRepository.getCurrentUser() }
+    val user by authRepository.currentUser.collectAsState()
     val scrollState = rememberScrollState()
 
     Scaffold(
@@ -85,13 +87,6 @@ fun ProfileScreen(
                 ProfileItem("About RescueX", Icons.Default.Info) { }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(
-                onClick = { /* Demo Logout */ },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text("Log Out")
-            }
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

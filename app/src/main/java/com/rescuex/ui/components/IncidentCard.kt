@@ -30,14 +30,14 @@ fun IncidentCard(incident: Incident, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = incident.id,
+                    text = incident.incidentId,
                     style = MaterialTheme.typography.titleMedium
                 )
                 SeverityBadge(incident.severity)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = incident.type.name.replace("_", " "),
+                text = incident.emergencyType.name.replace("_", " "),
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -46,7 +46,7 @@ fun IncidentCard(incident: Incident, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = dateFormat.format(incident.timestamp),
+                    text = dateFormat.format(incident.createdAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

@@ -1,61 +1,100 @@
 package com.rescuex.data.repository
 
+import android.util.Log
+import com.rescuex.data.model.EmergencyType
 import com.rescuex.data.model.Incident
 import com.rescuex.data.model.IncidentStatus
-import com.rescuex.data.model.EmergencyType
 import com.rescuex.data.model.Severity
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
 import java.util.*
 
 interface IncidentRepository {
     val incidentUpdates: Flow<Incident>
-    fun getIncidents(): List<Incident>
-    fun getIncidentById(id: String): Incident?
-    fun createIncident(type: EmergencyType): Incident
-    fun updateIncident(incident: Incident)
+    suspend fun getIncidents(): List<Incident>
+    suspend fun getIncidentById(id: String): Incident?
+    suspend fun createIncident(incident: Incident): Result<Incident>
+    suspend fun updateIncident(incident: Incident): Result<Unit>
+    fun listenToIncidents(patientId: String? = null, ambulanceId: String? = null, hospitalId: String? = null): Flow<List<Incident>>
 }
 
-class MockIncidentRepository : IncidentRepository {
-    private val incidents = mutableListOf(
-        Incident("RX-1001", EmergencyType.MEDICAL, Severity.HIGH, IncidentStatus.RESOLVED, Date(), "User reported a possible medical emergency and requested immediate assistance.", "Downtown, City A", "user1"),
-        Incident("RX-1002", EmergencyType.ACCIDENT, Severity.CRITICAL, IncidentStatus.RESOLVED, Date(), "Vehicle collision reported.", "Highway 1, Mile 42", "user1"),
-        Incident("RX-1003", EmergencyType.PERSONAL_SAFETY, Severity.MEDIUM, IncidentStatus.RESOLVED, Date(), "User felt unsafe and requested monitoring.", "Park Ave, City B", "user1")
-    )
+class InMemoryIncidentRepository : IncidentRepository {
+    private val TAG = "INCIDENT_REPO"
 
-    private val _updates = MutableSharedFlow<Incident>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    override val incidentUpdates: Flow<Incident> = _updates.asSharedFlow()
+    private val incidentsState = MutableStateFlow<List<Incident>>(emptyList())
+    private val _incidentUpdates = MutableSharedFlow<Incident>(extraBufferCapacity = 64)
+    override val incidentUpdates: Flow<Incident> = _incidentUpdates.asSharedFlow()
 
-    override fun getIncidents(): List<Incident> = ArrayList(incidents)
-
-    override fun getIncidentById(id: String): Incident? = incidents.find { it.id == id }
-
-    override fun createIncident(type: EmergencyType): Incident {
-        val newIncident = Incident(
-            "RX-DEMO-" + (1000 + incidents.size),
-            type,
-            Severity.PENDING,
-            IncidentStatus.SOS_ACTIVATED,
-            Date(),
-            "",
-            "Pending...",
-            "user1"
+    init {
+        // Pre-seed an active demo incident
+        val demoIncident = Incident(
+            incidentId = "INC-DEMO-001",
+            patientId = "user-patient-01",
+            patientName = "Demo Patient",
+            patientPhone = "+91 98765 43210",
+            emergencyType = EmergencyType.MEDICAL,
+            severity = Severity.CRITICAL,
+            status = IncidentStatus.AMBULANCE_DISPATCHED,
+            pickupLatitude = 40.7128,
+            pickupLongitude = -74.0060,
+            pickupAddress = "123 Main St, Downtown",
+            ambulanceId = "AMB-DEMO-001",
+            hospitalId = "H-001",
+            reportedSymptoms = "Patient experiencing severe chest pain and shortness of breath.",
+            createdAt = Date()
         )
-        incidents.add(0, newIncident)
-        _updates.tryEmit(newIncident)
-        return newIncident
+        incidentsState.value = listOf(demoIncident)
     }
 
-    override fun updateIncident(incident: Incident) {
-        val index = incidents.indexOfFirst { it.id == incident.id }
+    override suspend fun getIncidents(): List<Incident> = incidentsState.value
+
+    override suspend fun getIncidentById(id: String): Incident? =
+        incidentsState.value.find { it.incidentId == id }
+
+    override suspend fun createIncident(incident: Incident): Result<Incident> {
+        val id = if (incident.incidentId.isBlank()) "INC-${UUID.randomUUID().toString().take(8).uppercase()}" else incident.incidentId
+        val newIncident = incident.copy(incidentId = id, createdAt = incident.createdAt ?: Date())
+        val current = incidentsState.value.toMutableList()
+        current.add(0, newIncident)
+        incidentsState.value = current
+        _incidentUpdates.tryEmit(newIncident)
+        Log.i(TAG, "[INCIDENT] Created incident: $id")
+        return Result.success(newIncident)
+    }
+
+    override suspend fun updateIncident(incident: Incident): Result<Unit> {
+        val current = incidentsState.value.toMutableList()
+        val index = current.indexOfFirst { it.incidentId == incident.incidentId }
         if (index != -1) {
-            incidents[index] = incident
-            _updates.tryEmit(incident)
+            current[index] = incident
+            incidentsState.value = current
+            _incidentUpdates.tryEmit(incident)
+            Log.i(TAG, "[INCIDENT] Updated incident: ${incident.incidentId}")
+        } else {
+            current.add(0, incident)
+            incidentsState.value = current
+            _incidentUpdates.tryEmit(incident)
+        }
+        return Result.success(Unit)
+    }
+
+    override fun listenToIncidents(
+        patientId: String?,
+        ambulanceId: String?,
+        hospitalId: String?
+    ): Flow<List<Incident>> {
+        return incidentsState.map { list ->
+            list.filter { item ->
+                (patientId == null || item.patientId == patientId) &&
+                (ambulanceId == null || item.ambulanceId == ambulanceId) &&
+                (hospitalId == null || item.hospitalId == hospitalId)
+            }
         }
     }
 }
+
+typealias MockIncidentRepository = InMemoryIncidentRepository
+

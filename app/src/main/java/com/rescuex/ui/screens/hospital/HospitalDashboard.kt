@@ -1,15 +1,10 @@
 package com.rescuex.ui.screens.hospital
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,46 +16,62 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.rescuex.data.model.Incident
 import com.rescuex.ui.components.SeverityBadge
+import androidx.compose.material.icons.filled.Home
 import com.rescuex.ui.navigation.Screen
+import com.rescuex.ui.theme.RescueRed
+import com.rescuex.ui.theme.SafetyGreen
+import com.rescuex.viewmodel.AuthViewModel
 import com.rescuex.viewmodel.HospitalViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HospitalDashboard(
     navController: NavHostController,
-    hospitalViewModel: HospitalViewModel
+    hospitalViewModel: HospitalViewModel,
+    authViewModel: AuthViewModel
 ) {
     val incomingIncidents by hospitalViewModel.incomingIncidents.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Hospital ER Dashboard") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                title = { Text("Hospital Emergency Console") },
+                actions = {
+                    IconButton(onClick = { 
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(0)
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
                     }
                 }
             )
         }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)) {
-            Text(text = "Incoming Patients", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            // Stats Header
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatCard("Beds", "12", Modifier.weight(1f))
+                StatCard("ICU", "3", Modifier.weight(1f))
+                StatCard("Staff", "Active", Modifier.weight(1f))
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(text = "Incoming Emergencies", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
             
             if (incomingIncidents.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No incoming emergencies.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Text("No incoming patients.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(incomingIncidents) { incident ->
-                        HospitalIncidentCard(
+                        IncomingIncidentCard(
                             incident = incident,
-                            onSpecialistAction = { hospitalViewModel.markSpecialistReady(incident.id) },
-                            onClick = {
-                                navController.navigate(Screen.EmergencyDetails.createRoute(incident.id))
-                            }
+                            onAccept = { hospitalViewModel.updateHospitalResponse(incident.incidentId, true) },
+                            onReject = { hospitalViewModel.updateHospitalResponse(incident.incidentId, false) }
                         )
                     }
                 }
@@ -70,55 +81,74 @@ fun HospitalDashboard(
 }
 
 @Composable
-fun HospitalIncidentCard(
+fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = label, style = MaterialTheme.typography.labelSmall)
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun IncomingIncidentCard(
     incident: Incident,
-    onSpecialistAction: () -> Unit,
-    onClick: () -> Unit
+    onAccept: () -> Unit,
+    onReject: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 3.dp,
-        color = MaterialTheme.colorScheme.surface
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(text = incident.id, style = MaterialTheme.typography.labelSmall)
-                    Text(text = incident.type.name.replace("_", " "), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = "Patient: ${incident.patientName}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = "Type: ${incident.emergencyType.name}", style = MaterialTheme.typography.bodySmall)
                 }
                 SeverityBadge(incident.severity)
             }
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // AI Insights preview
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = incident.aiSummary ?: "Collecting information...", 
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2
-                    )
-                }
+            Text(text = "Reported Symptoms:", style = MaterialTheme.typography.labelMedium)
+            Text(text = incident.reportedSymptoms ?: "Initial report pending...", style = MaterialTheme.typography.bodyMedium)
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = "Ambulance: ${incident.ambulanceId ?: "Assigning..."}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "ETA: ${incident.etaMinutes ?: "?"} mins", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Ambulance ETA: ${incident.ambulance?.etaMinutes ?: "?"} min", 
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Button(onClick = onSpecialistAction, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
-                    Text("Prepare ER", style = MaterialTheme.typography.labelMedium)
+            if (incident.hospitalStatus == "ACCEPTED") {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = SafetyGreen)
+                ) {
+                    Text("ACCEPTED")
+                }
+            } else if (incident.hospitalStatus == "REJECTED") {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = RescueRed)
+                ) {
+                    Text("REJECTED")
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onAccept, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = SafetyGreen)) {
+                        Text("ACCEPT")
+                    }
+                    OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = RescueRed)) {
+                        Text("REJECT")
+                    }
                 }
             }
         }

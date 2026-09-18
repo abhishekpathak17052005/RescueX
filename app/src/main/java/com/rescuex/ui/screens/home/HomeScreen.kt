@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
-import com.rescuex.data.model.UserRole
 import com.rescuex.ui.components.*
 import com.rescuex.ui.navigation.Screen
 import com.rescuex.viewmodel.HomeViewModel
@@ -34,15 +35,22 @@ fun HomeScreen(
     val recentIncident by homeViewModel.recentIncident.collectAsState()
     val activeIncident by emergencyViewModel.activeIncident.collectAsState()
     val context = LocalContext.current
-    var showRoleSwitch by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val granted = permissions.entries.all { it.value }
         if (granted) {
-            emergencyViewModel.activateSOS()
-            navController.navigate(Screen.EmergencyActive.route)
+            user?.let {
+                emergencyViewModel.activateSOS(it.uid, it.name, it.phone)
+                // We navigate to EmergencyActive. Since activateSOS is async, 
+                // the screen will initially show loading/dots and then update.
+                // We don't have the ID yet, so we use a special value or wait.
+                // But for simplicity, we can pass "pending" or just let it observe.
+                // Actually, if we want to pass the ID, we should wait for it.
+                // But EmergencyViewModel.activeIncident will update.
+                navController.navigate(Screen.EmergencyActive.createRoute("pending"))
+            }
         }
     }
 
@@ -51,30 +59,10 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("RescueX", fontWeight = FontWeight.Bold) },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showRoleSwitch = true }) {
-                            Icon(imageVector = Icons.Default.SwitchAccount, contentDescription = "Switch Dashboard")
-                        }
-                        DropdownMenu(expanded = showRoleSwitch, onDismissRequest = { showRoleSwitch = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Patient Dashboard") },
-                                onClick = { showRoleSwitch = false /* Already here */ }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Ambulance Dashboard") },
-                                onClick = { 
-                                    showRoleSwitch = false
-                                    navController.navigate(Screen.ResponderDashboard.route) 
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Hospital Dashboard") },
-                                onClick = { 
-                                    showRoleSwitch = false
-                                    navController.navigate("hospital_dashboard") 
-                                }
-                            )
-                        }
+                    IconButton(onClick = { 
+                        navController.navigate(Screen.Profile.route)
+                    }) {
+                        Icon(imageVector = Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                 }
             )
@@ -97,7 +85,7 @@ fun HomeScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        onClick = { navController.navigate(Screen.EmergencyActive.route) }
+                        onClick = { navController.navigate(Screen.EmergencyActive.createRoute(activeIncident?.incidentId ?: "")) }
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -106,9 +94,10 @@ fun HomeScreen(
                                 Text(text = "Emergency Active", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = "Ambulance: ${activeIncident?.ambulance?.status?.name ?: "Pending"}", style = MaterialTheme.typography.bodySmall)
-                            if (activeIncident?.selectedHospital != null) {
-                                Text(text = "Hospital: ${activeIncident?.selectedHospital?.name}", style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Status: ${activeIncident?.status}", style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Ambulance: ${activeIncident?.ambulanceStatus}", style = MaterialTheme.typography.bodySmall)
+                            if (activeIncident?.hospitalName != null) {
+                                Text(text = "Hospital: ${activeIncident?.hospitalName}", style = MaterialTheme.typography.bodySmall)
                             }
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
                         }
@@ -120,8 +109,8 @@ fun HomeScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "Are you safe?",
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = "Welcome, ${user?.name ?: "User"}",
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -142,8 +131,10 @@ fun HomeScreen(
                         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
                     }
                     if (allGranted) {
-                        emergencyViewModel.activateSOS()
-                        navController.navigate(Screen.EmergencyActive.route)
+                        user?.let {
+                            emergencyViewModel.activateSOS(it.uid, it.name, it.phone)
+                            navController.navigate(Screen.EmergencyActive.createRoute("pending"))
+                        }
                     } else {
                         permissionLauncher.launch(permissions)
                     }
@@ -162,8 +153,11 @@ fun HomeScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     QuickActionCard(
                         title = "AI Assistant",
-                        icon = Icons.Default.Chat,
-                        onClick = { navController.navigate(Screen.AIAssistant.route) },
+                        icon = Icons.AutoMirrored.Filled.Chat,
+                        onClick = { 
+                            val id = activeIncident?.incidentId ?: "none"
+                            navController.navigate(Screen.AIAssistant.createRoute(id)) 
+                        },
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionCard(
@@ -197,7 +191,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 if (recentIncident != null) {
                     IncidentCard(recentIncident!!) {
-                        navController.navigate(Screen.EmergencyDetails.createRoute(recentIncident!!.id))
+                        navController.navigate(Screen.EmergencyDetails.createRoute(recentIncident!!.incidentId))
                     }
                 } else {
                     Text(
@@ -208,7 +202,7 @@ fun HomeScreen(
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "Demo Mode",
+                    text = "RescueX Multi-Role Backend",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )

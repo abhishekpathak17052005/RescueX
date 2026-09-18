@@ -13,12 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.rescuex.data.model.Ambulance
-import com.rescuex.data.model.Hospital
+import com.rescuex.data.model.AmbulanceStatus
 import com.rescuex.ui.theme.SafetyGreen
 
 @Composable
-fun AmbulanceStatusCard(ambulance: Ambulance) {
+fun AmbulanceStatusCard(status: AmbulanceStatus, etaMinutes: Int?, ambulanceId: String?) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
@@ -29,16 +28,16 @@ fun AmbulanceStatusCard(ambulance: Ambulance) {
             Icon(Icons.Default.Emergency, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = "Ambulance: ${ambulance.status.name}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(text = "ETA: ${ambulance.etaMinutes ?: "?"} minutes", style = MaterialTheme.typography.bodyMedium)
-                Text(text = "ID: ${ambulance.id}", style = MaterialTheme.typography.labelSmall)
+                Text(text = "Ambulance: ${status.name}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(text = "ETA: ${etaMinutes ?: "?"} minutes", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "ID: ${ambulanceId ?: "Assigning..."}", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
 }
 
 @Composable
-fun HospitalSelectionCard(hospital: Hospital) {
+fun HospitalSelectionCard(name: String, address: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
@@ -50,8 +49,8 @@ fun HospitalSelectionCard(hospital: Hospital) {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(text = "Receiving Hospital", style = MaterialTheme.typography.labelSmall)
-                Text(text = hospital.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(text = hospital.address, style = MaterialTheme.typography.bodySmall)
+                Text(text = name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(text = address, style = MaterialTheme.typography.bodySmall)
                 Text(text = "Verified for specialized care", style = MaterialTheme.typography.labelSmall, color = SafetyGreen)
             }
         }

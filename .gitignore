@@ -38,14 +38,19 @@ yarn-error.log
 testem.log
 /typings
 
+# Android & Gradle
+.gradle/
+build/
+app/build/
+*.iml
+.idea/
+local.properties
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
 # System Files
 .DS_Store
 Thumbs.db
-local.properties
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
-.cache/
 .local/

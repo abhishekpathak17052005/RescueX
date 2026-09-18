@@ -2,31 +2,41 @@ package com.rescuex.data.model
 
 import java.util.Date
 
-enum class IncidentStatus { SOS_ACTIVATED, INFO_COLLECTION, RESPONDER_ASSIGNED, RESPONDER_EN_ROUTE, RESPONDER_ARRIVED, RESOLVED }
+enum class IncidentStatus { 
+    SOS_ACTIVE, INFO_COLLECTION, AMBULANCE_DISPATCHED, RESPONDER_ASSIGNED, 
+    RESPONDER_EN_ROUTE, RESPONDER_ARRIVED, RESOLVED 
+}
 enum class EmergencyType { MEDICAL, ACCIDENT, PERSONAL_SAFETY, FIRE, NATURAL_DISASTER, MISSING_PERSON, SECURITY_THREAT, OTHER, NOT_SPECIFIED }
 enum class Severity { PENDING, LOW, MEDIUM, HIGH, CRITICAL }
-enum class AmbulanceStatus { NOT_REQUESTED, REQUESTED, DISPATCHED, EN_ROUTE, ARRIVED, COMPLETED }
+
+enum class AmbulanceStatus { 
+    NOT_REQUESTED, DISPATCHED, ACCEPTED, EN_ROUTE_TO_PATIENT, 
+    ARRIVED_AT_PATIENT, PATIENT_PICKED_UP, EN_ROUTE_TO_HOSPITAL, 
+    ARRIVED_AT_HOSPITAL, COMPLETED, REJECTED 
+}
 
 data class Hospital(
-    val id: String,
-    val name: String,
-    val address: String,
-    val latitude: Double,
-    val longitude: Double,
-    val emergencyDepartmentAvailable: Boolean,
-    val requiredCapabilityAvailable: Boolean,
-    val bedAvailable: Boolean,
-    val specialistAvailable: Boolean,
-    val estimatedTravelTimeMinutes: Int,
-    val distanceKm: Double,
-    val lastVerifiedAt: Date
+    val hospitalId: String = "",
+    val name: String = "",
+    val address: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val emergencyCapabilities: List<String> = emptyList(),
+    val beds: Map<String, Int> = emptyMap(),
+    val specialists: Map<String, Boolean> = emptyMap(),
+    val status: String = "ACTIVE",
+    val updatedAt: Date = Date()
 )
 
 data class Ambulance(
-    val id: String,
-    val status: AmbulanceStatus,
+    val ambulanceId: String = "",
+    val driverUid: String = "",
+    val status: AmbulanceStatus = AmbulanceStatus.NOT_REQUESTED,
+    val currentLatitude: Double = 0.0,
+    val currentLongitude: Double = 0.0,
+    val activeIncidentId: String? = null,
     val etaMinutes: Int? = null,
-    val destinationHospitalId: String? = null
+    val updatedAt: Date = Date()
 )
 
 data class AIIncidentSummary(
@@ -43,15 +53,31 @@ data class AIIncidentSummary(
 )
 
 data class Incident(
-    val id: String, 
-    val type: EmergencyType, 
-    val severity: Severity, 
-    val status: IncidentStatus, 
-    val timestamp: Date, 
-    val aiSummary: String? = null, 
-    val location: String? = null, 
-    val userId: String,
-    val structuredAiSummary: AIIncidentSummary? = null,
-    val ambulance: Ambulance? = null,
-    val selectedHospital: Hospital? = null
+    val incidentId: String = "",
+    val patientId: String = "",
+    val patientName: String = "",
+    val patientPhone: String = "",
+    val pickupAddress: String = "",
+    val pickupLatitude: Double = 0.0,
+    val pickupLongitude: Double = 0.0,
+    val emergencyType: EmergencyType = EmergencyType.NOT_SPECIFIED,
+    val severity: Severity = Severity.PENDING,
+    val reportedSymptoms: String? = null,
+    
+    val ambulanceId: String? = null,
+    val ambulanceStatus: AmbulanceStatus = AmbulanceStatus.NOT_REQUESTED,
+    val etaMinutes: Int? = null,
+    
+    val hospitalId: String? = null,
+    val hospitalName: String? = null,
+    val hospitalAddress: String? = null,
+    val hospitalLatitude: Double? = null,
+    val hospitalLongitude: Double? = null,
+    val hospitalStatus: String? = null,
+    
+    val status: IncidentStatus = IncidentStatus.SOS_ACTIVE,
+    val createdAt: Date = Date(),
+    val updatedAt: Date = Date(),
+    
+    val structuredAiSummary: AIIncidentSummary? = null
 )

@@ -45,7 +45,7 @@ fun HistoryScreen(
             ) {
                 items(incidents) { incident ->
                     IncidentCard(incident) {
-                        navController.navigate(Screen.EmergencyDetails.createRoute(incident.id))
+                        navController.navigate(Screen.EmergencyDetails.createRoute(incident.incidentId))
                     }
                 }
             }
