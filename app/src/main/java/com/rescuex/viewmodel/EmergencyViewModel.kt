@@ -10,6 +10,7 @@ import com.rescuex.data.repository.AssistantState
 import com.rescuex.location.LocationManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -52,6 +53,8 @@ class EmergencyViewModel(
 
     private val _elapsedTime = MutableStateFlow(0L)
     val elapsedTime: StateFlow<Long> = _elapsedTime
+
+    val localAudioLevel: Flow<Float> = voiceAssistantRepository.localAudioLevel
 
     private var timerJob: Job? = null
 

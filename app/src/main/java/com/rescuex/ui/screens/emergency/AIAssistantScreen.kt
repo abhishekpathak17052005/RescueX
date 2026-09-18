@@ -59,6 +59,7 @@ fun AIAssistantScreen(
     val aiSessionState by emergencyViewModel.aiSessionState.collectAsState()
     val isMuted by emergencyViewModel.isMuted.collectAsState()
     val transcript by emergencyViewModel.transcript.collectAsState()
+    val localAudioLevel by emergencyViewModel.localAudioLevel.collectAsState(initial = 0f)
     val activeIncident by emergencyViewModel.activeIncident.collectAsState()
     val context = LocalContext.current
     val TAG = "VapiAssistant"
@@ -78,7 +79,7 @@ fun AIAssistantScreen(
         Log.d(TAG, "[MIC DEBUG] Permission callback received: $isGranted")
         if (isGranted) {
             Log.d(TAG, "[MIC DEBUG] RECORD_AUDIO GRANTED - starting assistant")
-            emergencyViewModel.startAIAssistant()
+            emergencyViewModel.startNewAIAssistantSession()
         } else {
             Log.e(TAG, "[MIC DEBUG] RECORD_AUDIO DENIED")
         }
@@ -87,7 +88,7 @@ fun AIAssistantScreen(
     fun startAssistantSafely() {
         val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
         if (permission == PackageManager.PERMISSION_GRANTED) {
-            emergencyViewModel.startAIAssistant()
+            emergencyViewModel.startNewAIAssistantSession()
         } else {
             micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
@@ -100,7 +101,7 @@ fun AIAssistantScreen(
             hasAutoStarted = true
             val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
             if (permission == PackageManager.PERMISSION_GRANTED) {
-                emergencyViewModel.startAIAssistant()
+                emergencyViewModel.startNewAIAssistantSession()
             }
         }
     }
@@ -175,11 +176,12 @@ fun AIAssistantScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Interactive Voice Visualization
+                // Interactive Voice Visualization with real-time audio level
                 VoiceVisualization(
                     state = state,
+                    audioLevel = localAudioLevel,
                     onClick = {
                         if (state == AssistantState.READY || state == AssistantState.ENDED || state == AssistantState.ERROR) {
                             startAssistantSafely()
@@ -189,12 +191,59 @@ fun AIAssistantScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (state == AssistantState.READY || state == AssistantState.ENDED) "Tap circle to speak" else "Tap circle to end call",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
+                val isActiveCall = state == AssistantState.CONNECTED ||
+                        state == AssistantState.LISTENING ||
+                        state == AssistantState.SPEAKING ||
+                        state == AssistantState.THINKING
+
+                if (isActiveCall) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (localAudioLevel > 0.02f) {
+                        Surface(
+                            color = SafetyGreen.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Mic, contentDescription = null, tint = SafetyGreen, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "Receiving Voice (${(localAudioLevel * 100).toInt()}%)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = SafetyGreen,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    } else {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "Mic listening... Speak now or tap quick answer",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (state == AssistantState.READY || state == AssistantState.ENDED) "Tap circle to speak" else "Tap circle to end call",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -510,6 +559,7 @@ fun AIAssistantScreen(
 @Composable
 fun VoiceVisualization(
     state: AssistantState,
+    audioLevel: Float = 0f,
     onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "voice_pulse")
@@ -523,6 +573,12 @@ fun VoiceVisualization(
         ),
         label = "scale"
     )
+
+    val effectiveScale = if (audioLevel > 0.02f) {
+        1.1f + (audioLevel.coerceIn(0f, 1f) * 0.45f)
+    } else {
+        pulseScale
+    }
 
     val isActive = state == AssistantState.CONNECTING ||
             state == AssistantState.CONNECTED ||
@@ -544,11 +600,11 @@ fun VoiceVisualization(
             Box(
                 modifier = Modifier
                     .size(135.dp)
-                    .scale(if (state == AssistantState.LISTENING || state == AssistantState.SPEAKING) pulseScale else 1.1f)
+                    .scale(if (state == AssistantState.LISTENING || state == AssistantState.SPEAKING) effectiveScale else 1.1f)
                     .clip(CircleShape)
                     .background(
-                        if (state == AssistantState.SPEAKING || state == AssistantState.CONNECTED)
-                            SafetyGreen.copy(alpha = 0.2f)
+                        if (audioLevel > 0.02f || state == AssistantState.SPEAKING || state == AssistantState.CONNECTED)
+                            SafetyGreen.copy(alpha = 0.25f)
                         else
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     )
@@ -558,10 +614,10 @@ fun VoiceVisualization(
         Surface(
             modifier = Modifier.size(96.dp),
             shape = CircleShape,
-            color = when (state) {
-                AssistantState.CONNECTED, AssistantState.SPEAKING, AssistantState.LISTENING -> SafetyGreen
-                AssistantState.ERROR -> RescueRed
-                AssistantState.CONNECTING, AssistantState.THINKING -> MaterialTheme.colorScheme.primary
+            color = when {
+                state == AssistantState.CONNECTED || state == AssistantState.SPEAKING || state == AssistantState.LISTENING -> SafetyGreen
+                state == AssistantState.ERROR -> RescueRed
+                state == AssistantState.CONNECTING || state == AssistantState.THINKING -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.primary
             },
             shadowElevation = 8.dp

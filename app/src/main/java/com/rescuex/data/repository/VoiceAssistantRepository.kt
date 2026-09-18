@@ -23,6 +23,7 @@ interface VoiceAssistantRepository {
     val assistantState: Flow<AssistantState>
     val isMuted: Flow<Boolean>
     val transcript: Flow<String>
+    val localAudioLevel: Flow<Float>
     fun startAssistant(incidentId: String, lat: Double?, lon: Double?)
     fun stopAssistant()
     fun toggleMute()
@@ -54,8 +55,12 @@ class VapiVoiceAssistantRepository(
     private val _transcript = MutableStateFlow("")
     override val transcript: Flow<String> = _transcript
 
+    private val _localAudioLevel = MutableStateFlow(0f)
+    override val localAudioLevel: Flow<Float> = _localAudioLevel
+
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     private var previousAudioMode: Int = AudioManager.MODE_NORMAL
+    private var audioLevelJob: Job? = null
 
     private var vapi: Vapi? = null
     private var lastSummary: AIIncidentSummary? = null
@@ -87,20 +92,9 @@ class VapiVoiceAssistantRepository(
         try {
             audioManager?.let { am ->
                 previousAudioMode = am.mode
-                am.mode = AudioManager.MODE_IN_COMMUNICATION
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    val speakerDevice = am.availableCommunicationDevices.firstOrNull {
-                        it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-                    }
-                    if (speakerDevice != null) {
-                        am.setCommunicationDevice(speakerDevice)
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    am.isSpeakerphoneOn = true
-                }
+                // Unmute microphone to guarantee audio input recording
                 am.isMicrophoneMute = false
-                Log.d(TAG, "[AUDIO] Mode set to MODE_IN_COMMUNICATION, speakerphone active, micMute=false")
+                Log.d(TAG, "[AUDIO] Microhpone unmuted (isMicrophoneMute=false). Letting WebRTC handle communication routing.")
             }
         } catch (e: Exception) {
             Log.e(TAG, "[AUDIO] Error configuring audio for call: ${e.message}")
@@ -109,13 +103,9 @@ class VapiVoiceAssistantRepository(
 
     private fun restoreAudio() {
         try {
+            audioLevelJob?.cancel()
+            _localAudioLevel.value = 0f
             audioManager?.let { am ->
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    am.clearCommunicationDevice()
-                } else {
-                    @Suppress("DEPRECATION")
-                    am.isSpeakerphoneOn = false
-                }
                 am.mode = previousAudioMode
                 Log.d(TAG, "[AUDIO] Restored audio to mode=$previousAudioMode")
             }
@@ -134,6 +124,25 @@ class VapiVoiceAssistantRepository(
                         _state.value = AssistantState.CONNECTED
                         _transcript.value = "AI Connected. Listening to your emergency report..."
                         Log.d(TAG, "[VAPI EVENT] CallDidStart")
+
+                        // Start local audio level observer
+                        scope.launch {
+                            try {
+                                vapi?.startLocalAudioLevelObserver()
+                            } catch (e: Exception) {
+                                Log.w(TAG, "[AUDIO] startLocalAudioLevelObserver: ${e.message}")
+                            }
+                        }
+
+                        // Poll local audio level for real-time visualizer
+                        audioLevelJob?.cancel()
+                        audioLevelJob = scope.launch {
+                            while (_state.value != AssistantState.ENDED && _state.value != AssistantState.ERROR) {
+                                val level = vapi?.localAudioLevel ?: 0f
+                                _localAudioLevel.value = level
+                                delay(120)
+                            }
+                        }
                     }
                     is Vapi.Event.CallDidEnd -> {
                         restoreAudio()
@@ -299,18 +308,25 @@ class VapiVoiceAssistantRepository(
             scope.launch {
                 try {
                     Log.d(TAG, "[VAPI] Starting call with assistantId: $assistantId")
-                    vapi?.start(assistantId = assistantId)
+                    val callResult = vapi?.start(assistantId = assistantId)
+                    Log.d(TAG, "[VAPI] Call start response: $callResult")
+                    callResult?.onFailure { err ->
+                        Log.e(TAG, "[VAPI ERROR] Call start failed with error: ${err.message}", err)
+                    }
+                    callResult?.onSuccess { resp ->
+                        Log.d(TAG, "[VAPI] Call start succeeded, webCallUrl: ${resp.webCallUrl}")
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "[VAPI ERROR] Call start failed: ${e.message}", e)
                     launchFallbackTriage(incidentId, EmergencyType.MEDICAL, Severity.CRITICAL, "Emergency voice triage started.")
                 }
             }
 
-            // Long watchdog (15s) in case network is unreachable
+            // Watchdog (30s) in case network is unreachable
             triageJob = scope.launch {
-                delay(15000)
+                delay(30000)
                 if (_state.value == AssistantState.CONNECTING) {
-                    Log.w(TAG, "[AI TRIAGE] Vapi did not connect within 15s. Switching to emergency triage flow.")
+                    Log.w(TAG, "[AI TRIAGE] Vapi did not connect within 30s. Switching to emergency triage flow.")
                     runEmergencyTriageSimulation(
                         incidentId = incidentId,
                         type = EmergencyType.MEDICAL,
@@ -386,6 +402,8 @@ class VapiVoiceAssistantRepository(
 
     override fun stopAssistant() {
         triageJob?.cancel()
+        audioLevelJob?.cancel()
+        _localAudioLevel.value = 0f
         restoreAudio()
         scope.launch {
             try { vapi?.stop() } catch (e: Exception) {}
